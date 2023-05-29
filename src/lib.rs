@@ -56,7 +56,7 @@ impl Config {
         mut self,
         crate_name: impl Into<String>,
         licenses: impl IntoIterator<Item = impl Into<String>>,
-    ) -> self {
+    ) -> Self {
         self.license_text_overrides.insert(
             crate_name.into(),
             licenses.into_iter().map(|a| a.into()).collect(),
