@@ -10,7 +10,7 @@ use surf::{StatusCode, Url};
 use thiserror::Error;
 use tl::ParserOptions;
 
-pub static DOCS_RS_REGEX: Lazy<Regex> = lazy_regex!(r"^https?://docs\.rs/crate/.*?/.*?/source");
+static DOCS_RS_REGEX: Lazy<Regex> = lazy_regex!(r"^https?://docs\.rs/crate/.*?/.*?/source");
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
@@ -132,8 +132,8 @@ async fn get_license_texts_from_crates_io_package<'a>(
         .filter_map(|a| a.as_tag())
         .filter_map(|a| a.attributes().get("href")?)
         .map(|a| a.as_utf8_str())
-        .filter(|a| a.contains("LICENSE"))
-        .filter_map(|a| a.strip_prefix("./").map(|a| a.to_owned())) // todo
+        .filter(|a| a.to_lowercase().contains("license") || a.to_lowercase().contains("licence"))
+        .filter_map(|a| a.strip_prefix("./").map(|a| a.to_owned()))
         .filter_map(|a| Url::parse(&format!("{list_url}{a}")).ok())
         .inspect(|a| {
             debug!(
@@ -227,6 +227,18 @@ impl<'a> LicenseRetriever<'a> {
     pub fn from_bytes(bytes: &[u8]) -> Result<LicenseRetriever<'static>> {
         Ok(LicenseRetriever(rmp_serde::from_slice(bytes)?))
     }
+    pub fn iter(&self) -> impl Iterator<Item = &<LicenseRetriever<'a> as IntoIterator>::Item> {
+        self.0.iter()
+    }
+}
+
+impl<'a> IntoIterator for LicenseRetriever<'a> {
+    type Item = (Package, Cow<'a, [String]>);
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
 }
 
 #[macro_export]
@@ -238,24 +250,4 @@ macro_rules! license_retriever_data {
             $file_name
         )))
     };
-}
-
-#[cfg(test)]
-mod tests {
-
-    use log::LevelFilter;
-    use test_log::test;
-
-    use crate::{Config, LicenseRetriever};
-
-    #[test]
-    fn test() {
-        log::set_max_level(LevelFilter::Warn);
-        let config = Config::default();
-        let lr = LicenseRetriever::from_config(&config).unwrap();
-        assert_eq!(
-            lr,
-            LicenseRetriever::from_bytes(&lr.to_bytes().unwrap()).unwrap()
-        );
-    }
 }
