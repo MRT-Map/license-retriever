@@ -48,15 +48,15 @@ pub struct Config {
     pub manifest_path: Option<PathBuf>,
 }
 impl Config {
-    pub fn manifest_path(&mut self, path: impl Into<PathBuf>) -> &mut Self {
+    pub fn manifest_path(mut self, path: impl Into<PathBuf>) -> Self {
         self.manifest_path = Some(path.into());
         self
     }
     pub fn override_license_text(
-        &mut self,
+        mut self,
         crate_name: impl Into<String>,
         licenses: impl IntoIterator<Item = impl Into<String>>,
-    ) -> &mut Self {
+    ) -> self {
         self.license_text_overrides.insert(
             crate_name.into(),
             licenses.into_iter().map(|a| a.into()).collect(),
@@ -64,10 +64,10 @@ impl Config {
         self
     }
     pub fn override_license_url(
-        &mut self,
+        mut self,
         crate_name: impl Into<String>,
         urls: impl IntoIterator<Item = impl Into<Url>>,
-    ) -> &mut Self {
+    ) -> Self {
         self.license_url_overrides.insert(
             crate_name.into(),
             urls.into_iter().map(|a| a.into()).collect(),
