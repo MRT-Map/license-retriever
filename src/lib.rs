@@ -13,11 +13,13 @@ use serde::{Deserialize, Serialize};
 use surf::{StatusCode, Url};
 use thiserror::Error;
 use tl::ParserOptions;
+use async_lock::Semaphore;
 
 static DOCS_RS_REGEX: Lazy<Regex> = lazy_regex!(r"^https?://docs\.rs/crate/(.*?)/(.*?)/source");
 static GITHUB_FILE_REGEX: Lazy<Regex> =
     lazy_regex!(r"^https?://github\.com/(.*?)/(.*?)/blob/(.*?)/(.*)");
 static GITHUB_HOME_PAGE_REGEX: Lazy<Regex> = lazy_regex!(r"^https?://github\.com/(.*?)/(.*)$");
+static SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(std::env::var("MAX_GET_REQS").map_or(15, |a| a.parse::<usize>().unwrap())));
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
@@ -69,10 +71,6 @@ pub struct Config {
     pub panic_if_no_license_found: bool,
 }
 impl Config {
-    pub fn manifest_path(mut self, path: impl Into<PathBuf>) -> Self {
-        self.manifest_path = Some(path.into());
-        self
-    }
     pub fn panic_if_no_license_found(mut self) -> Self {
         self.panic_if_no_license_found = true;
         self
@@ -125,6 +123,7 @@ fn get_metadata(manifest_path: Option<PathBuf>) -> Result<Metadata> {
 
 async fn get_license_text_from_url(url: Url) -> Result<Option<String>> {
     debug!("Retrieving license from {url}");
+    let lock = SEMAPHORE.acquire();
     let response = surf::get(&url).await.err_with_url(&url)?;
     if response.status() == StatusCode::NotFound {
         warn!("{url} not found");
@@ -136,6 +135,7 @@ async fn get_license_text_from_url(url: Url) -> Result<Option<String>> {
         .body_string()
         .await
         .err_with_url(&url)?;
+    drop(lock);
     if DOCS_RS_REGEX.is_match(url.as_str()) {
         if let Ok(dom) = tl::parse(&content, ParserOptions::default()) {
             if let Some(n) = dom
@@ -164,12 +164,14 @@ async fn get_license_texts_from_crates_io_package<'a>(
             package.version.to_string()
         }
     ))?;
+    let lock = SEMAPHORE.acquire();
     let mut response = surf::get(&list_url).await.err_with_url(&list_url)?;
     if response.status() == StatusCode::NotFound {
         info!("docs.rs does not have {} {}", package.name, package.version);
         return Ok(vec![]);
     }
     let content = response.body_string().await.err_with_url(&list_url)?;
+    drop(lock);
     let dom = tl::parse(&content, ParserOptions::default())?;
     let n = dom
         .query_selector("a")
@@ -199,12 +201,14 @@ async fn get_license_texts_from_crates_io_package<'a>(
 }
 
 async fn get_license_texts_from_github_repo<'a>(url: &Url) -> Result<Vec<String>> {
-    let mut response = surf::get(url).await.err_with_url(&url)?;
+    let lock = SEMAPHORE.acquire();
+    let mut response = surf::get(url).await.err_with_url(url)?;
     if response.status() == StatusCode::NotFound {
         info!("{} returned 404", url);
         return Ok(vec![]);
     }
-    let content = response.body_string().await.err_with_url(&url)?;
+    let content = response.body_string().await.err_with_url(url)?;
+    drop(lock);
     let dom = tl::parse(&content, ParserOptions::default())?;
     let n = dom
         .query_selector("a.js-navigation-open.Link--primary")
