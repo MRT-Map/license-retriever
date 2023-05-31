@@ -123,7 +123,7 @@ fn get_metadata(manifest_path: Option<PathBuf>) -> Result<Metadata> {
 
 async fn get_license_text_from_url(url: Url) -> Result<Option<String>> {
     debug!("Retrieving license from {url}");
-    let lock = SEMAPHORE.acquire();
+    let lock = SEMAPHORE.acquire().await;
     let response = surf::get(&url).await.err_with_url(&url)?;
     if response.status() == StatusCode::NotFound {
         warn!("{url} not found");
@@ -164,7 +164,7 @@ async fn get_license_texts_from_crates_io_package<'a>(
             package.version.to_string()
         }
     ))?;
-    let lock = SEMAPHORE.acquire();
+    let lock = SEMAPHORE.acquire().await;
     let mut response = surf::get(&list_url).await.err_with_url(&list_url)?;
     if response.status() == StatusCode::NotFound {
         info!("docs.rs does not have {} {}", package.name, package.version);
@@ -201,7 +201,7 @@ async fn get_license_texts_from_crates_io_package<'a>(
 }
 
 async fn get_license_texts_from_github_repo<'a>(url: &Url) -> Result<Vec<String>> {
-    let lock = SEMAPHORE.acquire();
+    let lock = SEMAPHORE.acquire().await;
     let mut response = surf::get(url).await.err_with_url(url)?;
     if response.status() == StatusCode::NotFound {
         info!("{} returned 404", url);
