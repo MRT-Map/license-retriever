@@ -19,13 +19,13 @@ static DOCS_RS_REGEX: Lazy<Regex> = lazy_regex!(r"^https?://docs\.rs/crate/(.*?)
 static GITHUB_FILE_REGEX: Lazy<Regex> =
     lazy_regex!(r"^https?://github\.com/(.*?)/(.*?)/blob/(.*?)/(.*)");
 static GITHUB_HOME_PAGE_REGEX: Lazy<Regex> = lazy_regex!(r"^https?://github\.com/(.*?)/(.*)$");
-static SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(std::env::var("MAX_GET_REQS").map_or(15, |a| a.parse::<usize>().unwrap())));
+static SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(std::env::var("MAX_GET_REQS").map_or(5, |a| a.parse::<usize>().unwrap())));
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    #[error("http error: {0:?} at {1:?}")]
-    Http(surf::Error, Option<Url>),
+    #[error("http error: {0:?} at {1}")]
+    Http(surf::Error, Url),
     #[error("cargo metadata error: {0:?}")]
     Metadata(#[from] cargo_metadata::Error),
     #[error("html parse error: {0:?}")]
@@ -56,7 +56,7 @@ pub trait ErrWithUrl<T> {
 }
 impl<T> ErrWithUrl<T> for surf::Result<T> {
     fn err_with_url(self, err: &Url) -> Result<T> {
-        self.map_err(|e| Error::Http(e, Some(err.to_owned())))
+        self.map_err(|e| Error::Http(e, err.to_owned()))
     }
 }
 pub type Result<T, E = Error> = std::result::Result<T, E>;
