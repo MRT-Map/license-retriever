@@ -22,8 +22,8 @@ static GITHUB_HOME_PAGE_REGEX: Lazy<Regex> = lazy_regex!(r"^https?://github\.com
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    #[error("http error: {0:?}")]
-    Http(surf::Error),
+    #[error("http error: {0:?} at {1:?}")]
+    Http(surf::Error, Option<Url>),
     #[error("cargo metadata error: {0:?}")]
     Metadata(#[from] cargo_metadata::Error),
     #[error("html parse error: {0:?}")]
@@ -49,9 +49,12 @@ pub enum Error {
     #[error("unknown error")]
     Unknown,
 }
-impl From<surf::Error> for Error {
-    fn from(err: surf::Error) -> Self {
-        Error::Http(err)
+pub trait ErrWithUrl<T> {
+    fn err_with_url(self, err: &Url) -> Result<T>;
+}
+impl<T> ErrWithUrl<T> for surf::Result<T> {
+    fn err_with_url(self, err: &Url) -> Result<T> {
+        self.map_err(|e| Error::Http(e, Some(err.to_owned())))
     }
 }
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -122,12 +125,17 @@ fn get_metadata(manifest_path: Option<PathBuf>) -> Result<Metadata> {
 
 async fn get_license_text_from_url(url: Url) -> Result<Option<String>> {
     debug!("Retrieving license from {url}");
-    let response = surf::get(&url).await?;
+    let response = surf::get(&url).await.err_with_url(&url)?;
     if response.status() == StatusCode::NotFound {
         warn!("{url} not found");
         return Ok(None);
     }
-    let content = surf::get(&url).await?.body_string().await?;
+    let content = surf::get(&url)
+        .await
+        .err_with_url(&url)?
+        .body_string()
+        .await
+        .err_with_url(&url)?;
     if DOCS_RS_REGEX.is_match(url.as_str()) {
         if let Ok(dom) = tl::parse(&content, ParserOptions::default()) {
             if let Some(n) = dom
@@ -156,12 +164,12 @@ async fn get_license_texts_from_crates_io_package<'a>(
             package.version.to_string()
         }
     ))?;
-    let mut response = surf::get(&list_url).await?;
+    let mut response = surf::get(&list_url).await.err_with_url(&list_url)?;
     if response.status() == StatusCode::NotFound {
         info!("docs.rs does not have {} {}", package.name, package.version);
         return Ok(vec![]);
     }
-    let content = response.body_string().await?;
+    let content = response.body_string().await.err_with_url(&list_url)?;
     let dom = tl::parse(&content, ParserOptions::default())?;
     let n = dom
         .query_selector("a")
@@ -191,12 +199,12 @@ async fn get_license_texts_from_crates_io_package<'a>(
 }
 
 async fn get_license_texts_from_github_repo<'a>(url: &Url) -> Result<Vec<String>> {
-    let mut response = surf::get(url).await?;
+    let mut response = surf::get(url).await.err_with_url(&url)?;
     if response.status() == StatusCode::NotFound {
         info!("{} returned 404", url);
         return Ok(vec![]);
     }
-    let content = response.body_string().await?;
+    let content = response.body_string().await.err_with_url(&url)?;
     let dom = tl::parse(&content, ParserOptions::default())?;
     let n = dom
         .query_selector("a.js-navigation-open.Link--primary")
@@ -274,7 +282,7 @@ async fn get_license_texts_from_package<'a>(
     Ok(Cow::Owned(licenses))
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct LicenseRetriever<'a>(Vec<(Package, Cow<'a, [String]>)>);
 impl<'a> LicenseRetriever<'a> {
     pub async fn async_from_config(config: &'a Config) -> Result<LicenseRetriever<'a>> {

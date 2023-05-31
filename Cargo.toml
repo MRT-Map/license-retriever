@@ -1,6 +1,12 @@
 [package]
 name = "license-retriever"
 version = "0.1.0"
+authors = ["7d <61975820+iiiii7d@users.noreply.github.com>"]
+description = "Retrieves all licenses of a project"
+repository = "https://github.com/mrt-map/license-retriever"
+license = "MIT"
+keywords = ["license", "licence", "retrieve", "retriever", "license retriever", "licence retriever"]
+categories = ["development-tools::build-utils"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
