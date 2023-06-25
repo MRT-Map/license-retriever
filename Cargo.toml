@@ -12,20 +12,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "~1.0.163", features = ["derive"] }
+serde = { version = "~1.0.164", features = ["derive"] }
 rmp-serde = "~1.1.1"
 cargo_metadata = "~0.15.4"
 thiserror = "~1.0.40"
 surf = "~2.3.2"
 lazy-regex = "~2.5.0"
-itertools = "~0.10.5"
+itertools = "~0.11.0"
 tl = "~0.7.7"
 url = "~2.4.0"
 futures = "~0.3.28"
-log = "~0.4.18"
+log = "~0.4.19"
 async-fs = "~1.6.0"
 async-lock = "~2.7.0"
 
 [dev-dependencies]
-test-log = "~0.2.11"
+test-log = "~0.2.12"
 env_logger = "~0.10.0"
