@@ -23,7 +23,7 @@ tl = "~0.7.7"
 url = "~2.4.0"
 futures = "~0.3.28"
 log = "~0.4.19"
-async-fs = "~2.0.0"
+async-fs = "~2.1.0"
 async-lock = "~3.0.0"
 
 [dev-dependencies]
