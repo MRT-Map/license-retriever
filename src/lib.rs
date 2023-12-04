@@ -1,9 +1,167 @@
+#![warn(
+    clippy::as_ptr_cast_mut,
+    clippy::as_underscore,
+    clippy::bool_to_int_with_if,
+    clippy::case_sensitive_file_extension_comparisons,
+    clippy::cast_lossless,
+    clippy::cast_possible_wrap,
+    clippy::checked_conversions,
+    clippy::clear_with_drain,
+    clippy::clone_on_ref_ptr,
+    clippy::cloned_instead_of_copied,
+    clippy::cognitive_complexity,
+    clippy::collection_is_never_read,
+    clippy::copy_iterator,
+    clippy::create_dir,
+    clippy::default_trait_access,
+    clippy::deref_by_slicing,
+    clippy::doc_link_with_quotes,
+    clippy::doc_markdown,
+    clippy::empty_enum,
+    clippy::empty_line_after_outer_attr,
+    clippy::empty_structs_with_brackets,
+    clippy::enum_glob_use,
+    clippy::equatable_if_let,
+    clippy::exit,
+    clippy::expl_impl_clone_on_copy,
+    clippy::explicit_deref_methods,
+    clippy::explicit_into_iter_loop,
+    clippy::explicit_iter_loop,
+    clippy::filetype_is_file,
+    clippy::filter_map_next,
+    clippy::flat_map_option,
+    clippy::float_cmp,
+    clippy::float_cmp_const,
+    clippy::fn_params_excessive_bools,
+    clippy::fn_to_numeric_cast_any,
+    clippy::from_iter_instead_of_collect,
+    clippy::future_not_send,
+    clippy::get_unwrap,
+    clippy::if_not_else,
+    clippy::if_then_some_else_none,
+    clippy::implicit_hasher,
+    //clippy::impl_trait_in_params,
+    clippy::imprecise_flops,
+    clippy::inconsistent_struct_constructor,
+    clippy::index_refutable_slice,
+    clippy::inefficient_to_string,
+    clippy::invalid_upcast_comparisons,
+    clippy::items_after_statements,
+    clippy::iter_not_returning_iterator,
+    clippy::iter_on_empty_collections,
+    clippy::iter_on_single_items,
+    clippy::iter_with_drain,
+    clippy::large_digit_groups,
+    clippy::large_futures,
+    clippy::large_stack_arrays,
+    clippy::large_types_passed_by_value,
+    clippy::linkedlist,
+    clippy::lossy_float_literal,
+    clippy::manual_assert,
+    clippy::manual_clamp,
+    clippy::manual_instant_elapsed,
+    clippy::manual_let_else,
+    clippy::manual_ok_or,
+    clippy::manual_string_new,
+    clippy::many_single_char_names,
+    clippy::map_err_ignore,
+    clippy::map_unwrap_or,
+    clippy::match_on_vec_items,
+    clippy::mismatching_type_param_order,
+    clippy::missing_assert_message,
+    clippy::missing_const_for_fn,
+    clippy::missing_enforced_import_renames,
+    clippy::multiple_unsafe_ops_per_block,
+    clippy::must_use_candidate,
+    clippy::mut_mut,
+    clippy::naive_bytecount,
+    clippy::needless_bitwise_bool,
+    clippy::needless_collect,
+    clippy::needless_continue,
+    clippy::needless_for_each,
+    clippy::needless_pass_by_value,
+    clippy::negative_feature_names,
+    clippy::non_ascii_literal,
+    clippy::non_send_fields_in_send_ty,
+    clippy::or_fun_call,
+    clippy::range_minus_one,
+    clippy::range_plus_one,
+    clippy::rc_buffer,
+    clippy::redundant_closure_for_method_calls,
+    clippy::redundant_else,
+    clippy::redundant_feature_names,
+    clippy::redundant_pub_crate,
+    clippy::ref_option_ref,
+    clippy::ref_patterns,
+    clippy::rest_pat_in_fully_bound_structs,
+    clippy::return_self_not_must_use,
+    clippy::same_functions_in_if_condition,
+    clippy::semicolon_if_nothing_returned,
+    clippy::semicolon_inside_block,
+    clippy::separated_literal_suffix,
+    clippy::significant_drop_in_scrutinee,
+    clippy::significant_drop_tightening,
+    clippy::single_match_else,
+    clippy::str_to_string,
+    clippy::string_add,
+    clippy::string_add_assign,
+    clippy::string_slice,
+    clippy::struct_excessive_bools,
+    clippy::suboptimal_flops,
+    clippy::suspicious_operation_groupings,
+    clippy::suspicious_xor_used_as_pow,
+    clippy::tests_outside_test_module,
+    clippy::trailing_empty_array,
+    clippy::trait_duplication_in_bounds,
+    clippy::transmute_ptr_to_ptr,
+    clippy::transmute_undefined_repr,
+    clippy::trivial_regex,
+    clippy::trivially_copy_pass_by_ref,
+    clippy::try_err,
+    clippy::type_repetition_in_bounds,
+    clippy::unchecked_duration_subtraction,
+    clippy::undocumented_unsafe_blocks,
+    clippy::unicode_not_nfc,
+    clippy::uninlined_format_args,
+    clippy::unnecessary_box_returns,
+    clippy::unnecessary_join,
+    clippy::unnecessary_safety_comment,
+    clippy::unnecessary_safety_doc,
+    clippy::unnecessary_self_imports,
+    clippy::unnecessary_struct_initialization,
+    clippy::unneeded_field_pattern,
+    clippy::unnested_or_patterns,
+    clippy::unreadable_literal,
+    clippy::unsafe_derive_deserialize,
+    clippy::unused_async,
+    clippy::unused_peekable,
+    clippy::unused_rounding,
+    clippy::unused_self,
+    clippy::unwrap_in_result,
+    clippy::use_self,
+    clippy::useless_let_if_seq,
+    clippy::verbose_bit_mask,
+    clippy::verbose_file_reads
+)]
+#![deny(
+    clippy::derive_partial_eq_without_eq,
+    clippy::match_bool,
+    clippy::mem_forget,
+    clippy::mutex_atomic,
+    clippy::mutex_integer,
+    clippy::nonstandard_macro_braces,
+    clippy::path_buf_push_overwrite,
+    clippy::rc_mutex,
+    clippy::wildcard_dependencies
+)]
+
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
     path::PathBuf,
 };
 
+use async_lock::Semaphore;
 use cargo_metadata::{Metadata, MetadataCommand, Package};
 use futures::{executor, future};
 use itertools::Itertools;
@@ -13,13 +171,14 @@ use serde::{Deserialize, Serialize};
 use surf::{StatusCode, Url};
 use thiserror::Error;
 use tl::ParserOptions;
-use async_lock::Semaphore;
 
 static DOCS_RS_REGEX: Lazy<Regex> = lazy_regex!(r"^https?://docs\.rs/crate/(.*?)/(.*?)/source");
 static GITHUB_FILE_REGEX: Lazy<Regex> =
     lazy_regex!(r"^https?://github\.com/(.*?)/(.*?)/blob/(.*?)/(.*)");
 static GITHUB_HOME_PAGE_REGEX: Lazy<Regex> = lazy_regex!(r"^https?://github\.com/(.*?)/(.*)$");
-static SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(std::env::var("MAX_GET_REQS").map_or(5, |a| a.parse::<usize>().unwrap())));
+static SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| {
+    Semaphore::new(std::env::var("MAX_GET_REQS").map_or(5, |a| a.parse::<usize>().unwrap()))
+});
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
@@ -71,15 +230,18 @@ pub struct Config {
     pub panic_if_no_license_found: bool,
 }
 impl Config {
-    pub fn panic_if_no_license_found(mut self) -> Self {
+    #[must_use]
+    pub const fn panic_if_no_license_found(mut self) -> Self {
         self.panic_if_no_license_found = true;
         self
     }
+    #[must_use]
     pub fn copy_license(mut self, copier: impl Into<String>, copied: impl Into<String>) -> Self {
         self.license_copying_crates
             .insert(copier.into(), copied.into());
         self
     }
+    #[must_use]
     pub fn override_license_text(
         mut self,
         crate_name: impl Into<String>,
@@ -87,10 +249,11 @@ impl Config {
     ) -> Self {
         self.license_text_overrides.insert(
             crate_name.into(),
-            licenses.into_iter().map(|a| a.into()).collect(),
+            licenses.into_iter().map(std::convert::Into::into).collect(),
         );
         self
     }
+    #[must_use]
     pub fn override_license_url(
         mut self,
         crate_name: impl Into<String>,
@@ -105,6 +268,7 @@ impl Config {
         );
         self
     }
+    #[must_use]
     pub fn ignore(mut self, crate_name: impl Into<String>) -> Self {
         self.ignored_crates.insert(crate_name.into());
         self
@@ -182,13 +346,13 @@ async fn get_license_texts_from_crates_io_package<'a>(
         .filter_map(|a| a.attributes().get("href")?)
         .map(|a| a.as_utf8_str())
         .filter(|a| a.to_lowercase().contains("license") || a.to_lowercase().contains("licence"))
-        .filter_map(|a| a.strip_prefix("./").map(|a| a.to_owned()))
+        .filter_map(|a| a.strip_prefix("./").map(std::borrow::ToOwned::to_owned))
         .filter_map(|a| list_url.join(&a).ok())
         .inspect(|a| {
             debug!(
                 "Found license in {a} for {} {}",
                 package.name, package.version
-            )
+            );
         })
         .map(get_license_text_from_url)
         .collect::<Vec<_>>();
@@ -313,7 +477,7 @@ impl<'a> LicenseRetriever<'a> {
                 .iter_mut()
                 .find(|(p, _)| p.name == **copier)
                 .ok_or_else(|| Error::CopierCrateNotFound(copier.to_owned()))?;
-            *copier_licenses = copied_licenses
+            *copier_licenses = copied_licenses;
         }
 
         let unlicensed_packages = licenses
@@ -327,7 +491,7 @@ impl<'a> LicenseRetriever<'a> {
             if config.panic_if_no_license_found {
                 panic!("{msg}");
             } else {
-                warn!("{msg}")
+                warn!("{msg}");
             }
         }
 
