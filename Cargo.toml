@@ -5,27 +5,34 @@ authors = ["7d <61975820+iiiii7d@users.noreply.github.com>"]
 description = "Retrieves all licenses of a project"
 repository = "https://github.com/mrt-map/license-retriever"
 license = "MIT"
-keywords = ["license", "licence", "retrieve", "retriever", "license retriever", "licence retriever"]
+keywords = [
+  "license",
+  "licence",
+  "retrieve",
+  "retriever",
+  "license retriever",
+  "licence retriever",
+]
 categories = ["development-tools::build-utils"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "~1.0.193", features = ["derive"] }
+serde = { version = "~1.0.195", features = ["derive"] }
 rmp-serde = "~1.1.2"
 cargo_metadata = "~0.18.1"
-thiserror = "~1.0.50"
+thiserror = "~1.0.56"
 surf = "~2.3.2"
 lazy-regex = "~3.1.0"
 itertools = "~0.12.0"
 tl = "~0.7.7"
 url = "~2.5.0"
-futures = "~0.3.29"
+futures = "~0.3.30"
 log = "~0.4.20"
 async-fs = "~2.1.0"
 async-lock = "~3.3.0"
 
 [dev-dependencies]
-test-log = "~0.2.13"
+test-log = "~0.2.14"
 env_logger = "~0.11.0"
