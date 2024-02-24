@@ -470,7 +470,9 @@ impl<'a> LicenseRetriever<'a> {
         for (copier, copied) in &config.license_copying_crates {
             let copied_licenses = licenses
                 .iter()
-                .find(|(p, _)| p.name == **copied)
+                .filter(|(p, _)| p.name == **copied)
+                .sorted_by_key(|(_, a)| a.len())
+                .last()
                 .map(|(_, a)| a.clone())
                 .ok_or_else(|| Error::CopiedCrateNotFound(copied.to_owned()))?;
             let (_, copier_licenses) = licenses
