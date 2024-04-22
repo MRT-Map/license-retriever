@@ -20,7 +20,7 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "~1.0.197", features = ["derive"] }
-rmp-serde = "~1.1.2"
+rmp-serde = "~1.2.0"
 cargo_metadata = "~0.18.1"
 thiserror = "~1.0.57"
 surf = "~2.3.2"
