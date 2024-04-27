@@ -499,7 +499,7 @@ impl<'a> LicenseRetriever<'a> {
 
         Ok(LicenseRetriever(licenses))
     }
-    pub fn from_config(config: &'a Config) -> Result<LicenseRetriever<'a>> {
+    pub fn from_config(config: &'a Config) -> Result<Self> {
         executor::block_on(Self::async_from_config(config))
     }
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
