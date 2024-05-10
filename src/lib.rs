@@ -249,7 +249,7 @@ impl Config {
     ) -> Self {
         self.license_text_overrides.insert(
             crate_name.into(),
-            licenses.into_iter().map(std::convert::Into::into).collect(),
+            licenses.into_iter().map(Into::into).collect(),
         );
         self
     }
