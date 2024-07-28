@@ -156,15 +156,14 @@
 )]
 
 use std::{
-    borrow::Cow,
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     path::{Path, PathBuf},
 };
 
 use cargo_metadata::{Metadata, MetadataCommand, Package};
 use config::Config;
-use futures::{executor, future};
-use git2::{build::RepoBuilder, FetchOptions, Repository};
+use futures::executor;
+use git2::{build::RepoBuilder, FetchOptions};
 use itertools::Itertools;
 use log::{debug, info, warn};
 use rayon::prelude::*;
