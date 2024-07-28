@@ -163,15 +163,14 @@ use std::{
 
 use cargo_metadata::{Metadata, MetadataCommand, Package};
 use config::Config;
-use error::Error;
 use futures::{executor, future};
-use git2::Repository;
+use git2::{build::RepoBuilder, FetchOptions, Repository};
 use itertools::Itertools;
 use log::{debug, info, warn};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::error::Result;
+use crate::error::{Error, Result};
 
 pub mod config;
 pub mod error;
@@ -188,14 +187,17 @@ fn get_metadata(manifest_path: Option<impl Into<PathBuf>>) -> Result<Metadata> {
 
 fn get_packages(metadata: &Metadata) -> Vec<&Package> {
     let Some(resolve) = &metadata.resolve else {
+        info!("No resolve, getting all packages");
         return metadata.packages.iter().collect();
     };
     let Some(root) = &resolve.root else {
+        info!("No resolve root, getting all packages");
         return metadata.packages.iter().collect();
     };
     let mut packages = Vec::new();
     let mut to_eval = HashSet::from([root]);
     while let Some(id) = to_eval.iter().next().cloned() {
+        debug!("Evaluating {id}");
         to_eval.remove(id);
         let Some(package) = metadata.packages.iter().find(|a| a.id == *id) else {
             continue;
@@ -221,6 +223,7 @@ fn extract_licenses_from_repo_folder(path: &Path) -> Result<Vec<String>> {
         if !name.contains("license") && !name.contains("licence") {
             continue;
         }
+        info!("Found {:?}", entry.path());
         if entry.file_type()?.is_dir() {
             for entry2 in entry.path().read_dir()? {
                 let entry2 = entry2?;
@@ -235,27 +238,107 @@ fn extract_licenses_from_repo_folder(path: &Path) -> Result<Vec<String>> {
     return Ok(licenses);
 }
 
-fn get_licenses(package: &Package) -> Result<Vec<String>> {
-    if let Some(license_file) = package.license_file() {
-        return Ok(vec![std::fs::read_to_string(&license_file)?]);
-    };
-    if let Some(repository) = &package.repository {
-        let path = PathBuf::from(format!("{}/repo/{}", env!("OUT_DIR"), package.name));
-        let mut can_extract = true;
-        if !path.exists() {
-            if let Err(e) = Repository::clone(repository, &path) {
+fn clone_all_repositories(packages: &[&Package]) -> Result<()> {
+    let mut repositories = packages
+        .iter()
+        .filter_map(|a| a.repository.as_ref())
+        .collect::<HashSet<_>>();
+    let spdx = "https://github.com/spdx/license-list-data".to_string();
+    repositories.insert(&spdx);
+    repositories
+        .into_par_iter()
+        .map(|repository| {
+            let path = PathBuf::from(format!(
+                "{}/repo/{}",
+                env!("OUT_DIR"),
+                repository
+                    .strip_suffix('/')
+                    .unwrap_or(repository)
+                    .split("/tree/")
+                    .next()
+                    .unwrap()
+            ));
+            if path.exists() {
+                return Ok(());
+            }
+            info!("Cloning {repository} to {path:?}");
+            if let Err(e) = RepoBuilder::new()
+                .fetch_options({
+                    let mut fo = FetchOptions::new();
+                    fo.depth(1);
+                    fo
+                })
+                .clone(repository, &path)
+            {
                 if e.message() == "unexpected http status code: 404" {
-                    println!("{}", package.name);
-                    can_extract = false;
+                    warn!("Repo {repository} not found");
                 } else {
                     return Err(e.into());
                 }
             };
-        }
-        if can_extract {
-            return extract_licenses_from_repo_folder(&path);
+            Ok(())
+        })
+        .collect()
+}
+
+fn get_licenses(package: &Package) -> Result<Vec<String>> {
+    if let Some(license_file) = package.license_file() {
+        info!(
+            "Retrieving license file at {license_file:?} for {}",
+            package.name
+        );
+        return Ok(vec![std::fs::read_to_string(&license_file)?]);
+    };
+
+    if let Some(repository) = &package.repository {
+        let path = PathBuf::from(format!(
+            "{}/repo/{}",
+            env!("OUT_DIR"),
+            repository
+                .strip_suffix('/')
+                .unwrap_or(repository)
+                .split("/tree/")
+                .next()
+                .unwrap()
+        ));
+        let paths = [
+            path.to_owned(),
+            path.join(&package.name),
+            path.join("crates").join(&package.name),
+        ];
+        for path in paths {
+            if path.exists() {
+                let licenses = extract_licenses_from_repo_folder(&path)?;
+                if !licenses.is_empty() {
+                    return Ok(licenses);
+                }
+            }
         }
     }
+
+    if let Some(license) = &package.license {
+        let mut licenses = vec![];
+        for license in license
+            .replace(" AND ", " ")
+            .replace(" OR ", " ")
+            .replace(" WITH ", " ")
+            .replace("(", "")
+            .replace(")", "")
+            .split(" ")
+        {
+            let path = PathBuf::from(format!(
+                "{}/repo/https:/github.com/spdx/license-list-data/text/{license}.txt",
+                env!("OUT_DIR")
+            ));
+            if path.exists() {
+                licenses.push(std::fs::read_to_string(path)?);
+            }
+        }
+        if !licenses.is_empty() {
+            return Ok(licenses);
+        }
+    }
+
     return Ok(vec![]);
 }
 
@@ -265,13 +348,24 @@ impl LicenseRetriever {
     pub async fn from_config(config: &Config) -> Result<LicenseRetriever> {
         let metadata = get_metadata(config.manifest_path.as_ref())?;
         let packages = get_packages(&metadata);
+        clone_all_repositories(&packages)?;
         let licenses = packages
-            .into_par_iter()
-            .map(|a| Ok((a, get_licenses(a)?)))
-            .collect::<Vec<_>>()
             .into_iter()
+            .map(|a| Ok((a, get_licenses(a)?)))
             .map_ok(|(a, b)| (a.to_owned(), b))
-            .collect::<Result<_>>()?;
+            .collect::<Result<Vec<_>>>()?;
+
+        let no_license = licenses
+            .iter()
+            .filter(|(_, a)| a.is_empty())
+            .map(|(a, _)| &a.name)
+            .join(", ");
+        if !no_license.is_empty() {
+            if config.error_for_no_license {
+                return Err(Error::NoLicensesFound(no_license));
+            }
+            warn!("No licenses found for: {no_license}");
+        }
 
         Ok(LicenseRetriever(licenses))
     }
