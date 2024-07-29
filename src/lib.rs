@@ -218,7 +218,11 @@ fn extract_licenses_from_repo_folder(path: &Path) -> Result<Vec<String>> {
     for entry in path.read_dir()? {
         let entry = entry?;
         let name = entry.file_name().to_string_lossy().to_ascii_lowercase();
-        if !name.contains("license") && !name.contains("licence") {
+        if !name.contains("license")
+            && !name.contains("licence")
+            && !name.contains("copyright")
+            && !name.contains("copying")
+        {
             continue;
         }
         info!("Found {:?}", entry.path());
@@ -323,6 +327,7 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
             .replace(" WITH ", " ")
             .replace("(", "")
             .replace(")", "")
+            .replace("/", " ")
             .split(" ")
         {
             let path2 = path.join("text").join(format!("{license}.txt"));
