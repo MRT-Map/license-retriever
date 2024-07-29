@@ -237,47 +237,37 @@ fn extract_licenses_from_repo_folder(path: &Path) -> Result<Vec<String>> {
     return Ok(licenses);
 }
 
-fn clone_all_repositories(packages: &[&Package]) -> Result<()> {
-    let mut repositories = packages
-        .iter()
-        .filter_map(|a| a.repository.as_ref())
-        .collect::<HashSet<_>>();
-    let spdx = "https://github.com/spdx/license-list-data".to_string();
-    repositories.insert(&spdx);
-    repositories
-        .into_par_iter()
-        .map(|repository| {
-            let path = PathBuf::from(format!(
-                "{}/repo/{}",
-                env!("OUT_DIR"),
-                repository
-                    .strip_suffix('/')
-                    .unwrap_or(repository)
-                    .split("/tree/")
-                    .next()
-                    .unwrap()
-            ));
-            if path.exists() {
-                return Ok(());
-            }
-            info!("Cloning {repository} to {path:?}");
-            if let Err(e) = RepoBuilder::new()
-                .fetch_options({
-                    let mut fo = FetchOptions::new();
-                    fo.depth(1);
-                    fo
-                })
-                .clone(repository, &path)
-            {
-                if e.message() == "unexpected http status code: 404" {
-                    warn!("Repo {repository} not found");
-                } else {
-                    return Err(e.into());
-                }
-            };
-            Ok(())
+fn clone_repo(id: &str, repository: &str) -> Result<bool> {
+    let repository = repository
+        .strip_suffix('/')
+        .unwrap_or(repository)
+        .split("/tree/")
+        .next()
+        .unwrap();
+    let path = PathBuf::from(format!("{}/repo/{id}", env!("OUT_DIR"),));
+
+    if path.exists() {
+        return Ok(true);
+    }
+
+    info!("Cloning {repository} to {path:?}");
+    if let Err(e) = RepoBuilder::new()
+        .fetch_options({
+            let mut fo = FetchOptions::new();
+            fo.depth(1);
+            fo
         })
-        .collect()
+        .clone(repository, &path)
+    {
+        if e.message() == "unexpected http status code: 404" {
+            warn!("Repo {repository} not found");
+            Ok(false)
+        } else {
+            Err(e.into())
+        }
+    } else {
+        Ok(true)
+    }
 }
 
 fn get_licenses(package: &Package) -> Result<Vec<String>> {
@@ -289,33 +279,44 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
         return Ok(vec![std::fs::read_to_string(&license_file)?]);
     };
 
+    let path = package
+        .manifest_path
+        .parent()
+        .unwrap_or(&package.manifest_path);
+    if path.exists() {
+        let licenses = extract_licenses_from_repo_folder(path.as_std_path())?;
+        if !licenses.is_empty() {
+            return Ok(licenses);
+        }
+    }
+
     if let Some(repository) = &package.repository {
-        let path = PathBuf::from(format!(
-            "{}/repo/{}",
-            env!("OUT_DIR"),
-            repository
-                .strip_suffix('/')
-                .unwrap_or(repository)
-                .split("/tree/")
-                .next()
-                .unwrap()
-        ));
-        let paths = [
-            path.to_owned(),
-            path.join(&package.name),
-            path.join("crates").join(&package.name),
-        ];
-        for path in paths {
-            if path.exists() {
-                let licenses = extract_licenses_from_repo_folder(&path)?;
-                if !licenses.is_empty() {
-                    return Ok(licenses);
+        let can_eval = clone_repo(&package.id.repr, repository)?;
+        if can_eval {
+            let path = PathBuf::from(format!("{}/repo/{}", env!("OUT_DIR"), package.id.repr));
+            let paths = [
+                path.to_owned(),
+                path.join(&package.name),
+                path.join("crates").join(&package.name),
+            ];
+            for path in paths {
+                if path.exists() {
+                    let licenses = extract_licenses_from_repo_folder(&path)?;
+                    if !licenses.is_empty() {
+                        return Ok(licenses);
+                    }
                 }
             }
         }
     }
 
     if let Some(license) = &package.license {
+        clone_repo(
+            &(package.id.repr.to_owned() + "@spdx"),
+            "https://github.com/spdx/license-list-data",
+        )?;
+        let path = PathBuf::from(format!("{}/repo/{}@spdx", env!("OUT_DIR"), package.id.repr));
+        println!("{path:?}");
         let mut licenses = vec![];
         for license in license
             .replace(" AND ", " ")
@@ -325,12 +326,10 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
             .replace(")", "")
             .split(" ")
         {
-            let path = PathBuf::from(format!(
-                "{}/repo/https:/github.com/spdx/license-list-data/text/{license}.txt",
-                env!("OUT_DIR")
-            ));
-            if path.exists() {
-                licenses.push(std::fs::read_to_string(path)?);
+            let path2 = path.join("text").join(license.to_owned() + ".txt");
+            if path2.exists() {
+                info!("Found {path2:?}");
+                licenses.push(std::fs::read_to_string(path2)?);
             }
         }
         if !licenses.is_empty() {
@@ -347,7 +346,7 @@ impl LicenseRetriever {
     pub async fn from_config(config: &Config) -> Result<LicenseRetriever> {
         let metadata = get_metadata(config.manifest_path.as_ref())?;
         let packages = get_packages(&metadata);
-        clone_all_repositories(&packages)?;
+
         let licenses = packages
             .into_iter()
             .map(|a| Ok((a, get_licenses(a)?)))
