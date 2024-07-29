@@ -162,7 +162,6 @@ use std::{
 
 use cargo_metadata::{Metadata, MetadataCommand, Package};
 use config::Config;
-use futures::executor;
 use git2::{build::RepoBuilder, FetchOptions};
 use itertools::Itertools;
 use log::{debug, info, warn};
@@ -195,7 +194,7 @@ fn get_packages(metadata: &Metadata) -> Vec<&Package> {
     };
     let mut packages = Vec::new();
     let mut to_eval = HashSet::from([root]);
-    while let Some(id) = to_eval.iter().next().cloned() {
+    while let Some(id) = to_eval.iter().next().copied() {
         debug!("Evaluating {id}");
         to_eval.remove(id);
         let Some(package) = metadata.packages.iter().find(|a| a.id == *id) else {
@@ -206,12 +205,12 @@ fn get_packages(metadata: &Metadata) -> Vec<&Package> {
             continue;
         };
         for dep in &node.deps {
-            if packages.iter().find(|a| a.id == dep.pkg).is_none() {
+            if !packages.iter().any(|a| a.id == dep.pkg) {
                 to_eval.insert(&dep.pkg);
             }
         }
     }
-    return packages;
+    packages
 }
 
 fn extract_licenses_from_repo_folder(path: &Path) -> Result<Vec<String>> {
@@ -226,15 +225,15 @@ fn extract_licenses_from_repo_folder(path: &Path) -> Result<Vec<String>> {
         if entry.file_type()?.is_dir() {
             for entry2 in entry.path().read_dir()? {
                 let entry2 = entry2?;
-                if entry2.file_type()?.is_file() {
+                if !entry2.file_type()?.is_dir() {
                     licenses.push(std::fs::read_to_string(entry2.path())?);
                 }
             }
         } else {
-            licenses.push(std::fs::read_to_string(entry.path())?)
+            licenses.push(std::fs::read_to_string(entry.path())?);
         }
     }
-    return Ok(licenses);
+    Ok(licenses)
 }
 
 fn clone_repo(id: &str, repository: &str) -> Result<bool> {
@@ -244,7 +243,7 @@ fn clone_repo(id: &str, repository: &str) -> Result<bool> {
         .split("/tree/")
         .next()
         .unwrap();
-    let path = PathBuf::from(format!("{}/repo/{id}", env!("OUT_DIR"),));
+    let path = PathBuf::from(format!("{}/repo/{id}", std::env::var("OUT_DIR")?,));
 
     if path.exists() {
         return Ok(true);
@@ -293,7 +292,11 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
     if let Some(repository) = &package.repository {
         let can_eval = clone_repo(&package.id.repr, repository)?;
         if can_eval {
-            let path = PathBuf::from(format!("{}/repo/{}", env!("OUT_DIR"), package.id.repr));
+            let path = PathBuf::from(format!(
+                "{}/repo/{}",
+                std::env::var("OUT_DIR")?,
+                package.id.repr
+            ));
             let paths = [
                 path.to_owned(),
                 path.join(&package.name),
@@ -311,11 +314,9 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
     }
 
     if let Some(license) = &package.license {
-        clone_repo(
-            &(package.id.repr.to_owned() + "@spdx"),
-            "https://github.com/spdx/license-list-data",
-        )?;
-        let path = PathBuf::from(format!("{}/repo/{}@spdx", env!("OUT_DIR"), package.id.repr));
+        let spdx_id = format!("{}@spdx", package.id);
+        clone_repo(&spdx_id, "https://github.com/spdx/license-list-data")?;
+        let path = PathBuf::from(format!("{}/repo/{spdx_id}", std::env::var("OUT_DIR")?));
         println!("{path:?}");
         let mut licenses = vec![];
         for license in license
@@ -326,7 +327,7 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
             .replace(")", "")
             .split(" ")
         {
-            let path2 = path.join("text").join(license.to_owned() + ".txt");
+            let path2 = path.join("text").join(format!("{license}.txt"));
             if path2.exists() {
                 info!("Found {path2:?}");
                 licenses.push(std::fs::read_to_string(path2)?);
@@ -337,25 +338,29 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
         }
     }
 
-    return Ok(vec![]);
+    Ok(vec![])
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct LicenseRetriever(Vec<(Package, Vec<String>)>);
 impl LicenseRetriever {
-    pub async fn from_config(config: &Config) -> Result<LicenseRetriever> {
+    pub fn from_config(config: &Config) -> Result<Self> {
         let metadata = get_metadata(config.manifest_path.as_ref())?;
         let packages = get_packages(&metadata);
 
         let licenses = packages
-            .into_iter()
-            .map(|a| Ok((a, get_licenses(a)?)))
-            .map_ok(|(a, b)| (a.to_owned(), b))
+            .into_par_iter()
+            .map(|a| {
+                if let Some(licenses) = config.overrides.get(&a.name) {
+                    return Ok((a.to_owned(), licenses.to_owned()));
+                }
+                Ok((a.to_owned(), get_licenses(a)?))
+            })
             .collect::<Result<Vec<_>>>()?;
 
         let no_license = licenses
             .iter()
-            .filter(|(_, a)| a.is_empty())
+            .filter(|(a, b)| b.is_empty() && !config.ignored_crates.contains(&a.name))
             .map(|(a, _)| &a.name)
             .join(", ");
         if !no_license.is_empty() {
@@ -365,37 +370,30 @@ impl LicenseRetriever {
             warn!("No licenses found for: {no_license}");
         }
 
-        Ok(LicenseRetriever(licenses))
-    }
-    pub fn from_config_sync(config: &Config) -> Result<Self> {
-        executor::block_on(Self::from_config(config))
+        Ok(Self(licenses))
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
         Ok(rmp_serde::to_vec_named(&self.0)?)
     }
-    pub fn from_bytes(bytes: &[u8]) -> Result<LicenseRetriever> {
-        Ok(LicenseRetriever(rmp_serde::from_slice(bytes)?))
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        Ok(Self(rmp_serde::from_slice(bytes)?))
     }
 
-    pub async fn save_in_out_dir(&self, file_name: &str) -> Result<()> {
-        async_fs::write(
+    pub fn save_in_out_dir(&self, file_name: &str) -> Result<()> {
+        std::fs::write(
             PathBuf::from(std::env::var("OUT_DIR")?).join(file_name),
             self.to_bytes()?,
-        )
-        .await?;
+        )?;
         Ok(())
     }
-    pub fn save_in_out_dir_sync(&self, file_name: &str) -> Result<()> {
-        executor::block_on(self.save_in_out_dir(file_name))
-    }
 
-    pub fn iter(&self) -> impl Iterator<Item = &<LicenseRetriever as IntoIterator>::Item> {
+    pub fn iter(&self) -> impl Iterator<Item = &<Self as IntoIterator>::Item> {
         self.0.iter()
     }
 }
 
-impl<'a> IntoIterator for LicenseRetriever {
+impl IntoIterator for LicenseRetriever {
     type Item = (Package, Vec<String>);
     type IntoIter = std::vec::IntoIter<Self::Item>;
 
@@ -408,7 +406,7 @@ impl<'a> IntoIterator for LicenseRetriever {
 macro_rules! license_retriever_data {
     ($file_name:literal) => {
         license_retriever::LicenseRetriever::from_bytes(include_bytes!(concat!(
-            env!("OUT_DIR"),
+            std::env::var("OUT_DIR")?,
             "/",
             $file_name
         )))

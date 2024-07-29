@@ -4,7 +4,7 @@ use test_log::test;
 #[test]
 fn test() {
     let config = Config::default();
-    let lr = LicenseRetriever::from_config_sync(&config).unwrap();
+    let lr = LicenseRetriever::from_config(&config).unwrap();
     assert_eq!(
         lr,
         LicenseRetriever::from_bytes(&lr.to_bytes().unwrap()).unwrap()
