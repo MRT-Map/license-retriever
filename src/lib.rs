@@ -314,9 +314,7 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
     }
 
     if let Some(license) = &package.license {
-        let spdx_id = format!("{}@spdx", package.id);
-        clone_repo(&spdx_id, "https://github.com/spdx/license-list-data")?;
-        let path = PathBuf::from(format!("{}/repo/{spdx_id}", std::env::var("OUT_DIR")?));
+        let path = PathBuf::from(format!("{}/repo/@spdx", std::env::var("OUT_DIR")?));
         println!("{path:?}");
         let mut licenses = vec![];
         for license in license
@@ -347,6 +345,9 @@ impl LicenseRetriever {
     pub fn from_config(config: &Config) -> Result<Self> {
         let metadata = get_metadata(config.manifest_path.as_ref())?;
         let packages = get_packages(&metadata);
+
+        info!("Cloning spdx license repo");
+        clone_repo("@spdx", "https://github.com/spdx/license-list-data")?;
 
         let licenses = packages
             .into_par_iter()
