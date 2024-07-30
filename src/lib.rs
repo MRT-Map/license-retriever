@@ -254,7 +254,7 @@ impl IntoIterator for LicenseRetriever {
 macro_rules! license_retriever_data {
     ($file_name:literal) => {
         license_retriever::LicenseRetriever::from_bytes(include_bytes!(concat!(
-            std::env::var("OUT_DIR")?,
+            env!("OUT_DIR"),
             "/",
             $file_name
         )))
