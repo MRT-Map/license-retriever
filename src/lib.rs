@@ -247,7 +247,7 @@ fn clone_repo(id: &str, repository: &str) -> Result<bool> {
         .split("/tree/")
         .next()
         .unwrap();
-    let path = PathBuf::from(format!("{}/repo/{id}", std::env::var("CARGO_TARGET_DIR")?,));
+    let path = PathBuf::from(format!("{}/repo/{id}", std::env::var("OUT_DIR")?,));
 
     if path.exists() {
         return Ok(true);
@@ -298,7 +298,7 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
         if can_eval {
             let path = PathBuf::from(format!(
                 "{}/repo/{}",
-                std::env::var("CARGO_TARGET_DIR")?,
+                std::env::var("OUT_DIR")?,
                 package.id.repr
             ));
             let paths = [
@@ -318,7 +318,7 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
     }
 
     if let Some(license) = &package.license {
-        let path = PathBuf::from(format!("{}/repo/@spdx", std::env::var("CARGO_TARGET_DIR")?));
+        let path = PathBuf::from(format!("{}/repo/@spdx", std::env::var("OUT_DIR")?));
         println!("{path:?}");
         let mut licenses = vec![];
         for license in license
@@ -386,9 +386,9 @@ impl LicenseRetriever {
         Ok(Self(rmp_serde::from_slice(bytes)?))
     }
 
-    pub fn save_in_target_dir(&self, file_name: &str) -> Result<()> {
+    pub fn save_in_out_dir(&self, file_name: &str) -> Result<()> {
         std::fs::write(
-            PathBuf::from(std::env::var("CARGO_TARGET_DIR")?).join(file_name),
+            PathBuf::from(std::env::var("OUT_DIR")?).join(file_name),
             self.to_bytes()?,
         )?;
         Ok(())
@@ -412,7 +412,7 @@ impl IntoIterator for LicenseRetriever {
 macro_rules! license_retriever_data {
     ($file_name:literal) => {
         license_retriever::LicenseRetriever::from_bytes(include_bytes!(concat!(
-            std::env::var("CARGO_TARGET_DIR")?,
+            std::env::var("OUT_DIR")?,
             "/",
             $file_name
         )))
