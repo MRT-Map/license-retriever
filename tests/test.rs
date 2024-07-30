@@ -10,6 +10,6 @@ fn test() {
         LicenseRetriever::from_bytes(&lr.to_bytes().unwrap()).unwrap()
     );
     for (p, l) in lr {
-        println!("{}: {}", p.name, l.len())
+        println!("{}: {}", p.name, l.len());
     }
 }
