@@ -34,7 +34,7 @@ jobs:
       - run: cargo package
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.build.outputs.version }}
+          tag_name: ${{ needs.version.outputs.version }}
           files: target/package/*.crate
 
   crates-io:
