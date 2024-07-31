@@ -1,0 +1,49 @@
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - run: cargo test -- --nocapture
+      env:
+        OUT_DIR: target
+
+  version:
+    runs-on: ubuntu-latest
+    needs: test
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+    - uses: actions/checkout@v4
+    - run: cargo update
+    - id: version
+      run: echo "version=v$(cargo pkgid | cut -d '#' -f 2)" >> "$GITHUB_OUTPUT"
+
+  github-release:
+    runs-on: ubuntu-latest
+    needs: [test, version]
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo package
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.version }}
+          files: target/package/*.crate
+
+  crates-io:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo login "$CRATES_IO_API"
+        env:
+          CRATES_IO_API: ${{ secrets.CRATES_IO_API }}
+      - run: cargo publish
