@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["7d <61975820+iiiii7d@users.noreply.github.com>"]
 description = "Retrieves all licenses of a project"
 repository = "https://github.com/mrt-map/license-retriever"
-license = "MIT"
+license = "LGPL-3.0-only"
 keywords = [
   "license",
   "licence",
