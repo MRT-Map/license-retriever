@@ -8,8 +8,8 @@
 
 ![GitHub code size](https://img.shields.io/github/languages/code-size/MRT-Map/license-retriever)
 ![GitHub repo size](https://img.shields.io/github/repo-size/MRT-Map/license-retriever)
-![GitHub last commit (branch)](https://img.shields.io/github/last-commit/mrt-map/license-retriever/dev)
-![GitHub commits since latest release (branch)](https://img.shields.io/github/commits-since/mrt-map/license-retriever/latest/dev?include_prereleases)
+![GitHub last commit (branch)](https://img.shields.io/github/last-commit/mrt-map/license-retriever/main)
+![GitHub commits since latest release (branch)](https://img.shields.io/github/commits-since/mrt-map/license-retriever/latest/main?include_prereleases)
 ![GitHub Release Date](https://img.shields.io/github/release-date/MRT-Map/license-retriever)
 ![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/MRT-Map/license-retriever)
 
