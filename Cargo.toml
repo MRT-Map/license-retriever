@@ -1,10 +1,11 @@
 [package]
 name = "license-retriever"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["7d <61975820+iiiii7d@users.noreply.github.com>"]
-description = "Retrieves all licenses of a project"
+description = "Retrieves licenses of all Rust dependencies"
 repository = "https://github.com/mrt-map/license-retriever"
 license = "LGPL-3.0-only"
+readme = "README.md"
 keywords = [
   "license",
   "licence",

@@ -1,4 +1,4 @@
-use license_retriever::{config::Config, LicenseRetriever};
+use license_retriever::{Config, LicenseRetriever};
 use test_log::test;
 
 #[test]
@@ -10,6 +10,6 @@ fn test() {
         LicenseRetriever::from_bytes(&lr.to_bytes().unwrap()).unwrap()
     );
     for (p, l) in lr {
-        println!("{}: {}", p.name, l.len());
+        println!("{}: {} ({:?})", p.name, l.len(), p.license);
     }
 }

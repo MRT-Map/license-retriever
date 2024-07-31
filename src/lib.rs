@@ -4,17 +4,19 @@ use std::{
 };
 
 use cargo_metadata::{Metadata, MetadataCommand, Package};
-use config::Config;
 use git2::{build::RepoBuilder, FetchOptions};
 use itertools::Itertools;
 use log::{debug, info, warn};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::error::{Error, Result};
+pub use crate::{
+    config::Config,
+    error::{Error, Result},
+};
 
-pub mod config;
-pub mod error;
+mod config;
+mod error;
 
 fn get_metadata(manifest_path: Option<impl Into<PathBuf>>) -> Result<Metadata> {
     info!("Retrieving metadata");
