@@ -8,6 +8,7 @@ use git2::{build::RepoBuilder, FetchOptions};
 use itertools::Itertools;
 use log::{debug, info, warn};
 use rayon::prelude::*;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 pub use crate::{
@@ -139,13 +140,12 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
     }
 
     if let Some(repository) = &package.repository {
-        let can_eval = clone_repo(&package.id.repr, repository)?;
+        let folder = Regex::new(r#"[<>:/\\|?*"]"#)
+            .unwrap()
+            .replace_all(&package.id.repr, "");
+        let can_eval = clone_repo(&folder, repository)?;
         if can_eval {
-            let path = PathBuf::from(format!(
-                "{}/repo/{}",
-                std::env::var("OUT_DIR")?,
-                package.id.repr
-            ));
+            let path = PathBuf::from(format!("{}/repo/{}", std::env::var("OUT_DIR")?, folder));
             let paths = [
                 path.clone(),
                 path.join(&package.name),
