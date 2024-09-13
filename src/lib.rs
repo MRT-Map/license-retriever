@@ -252,23 +252,24 @@ impl IntoIterator for LicenseRetriever {
 
 impl fmt::Display for LicenseRetriever {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        const SEPERATOR_WIDTH: u32 = 80;
+        const SEPERATOR_WIDTH: usize = 80;
+        let separator: String = "=".repeat(SEPERATOR_WIDTH);
 
-        write!(f, "{:=<1}\n", SEPERATOR_WIDTH)?;
+        writeln!(f, "{}\n", separator)?;
 
         for (package, license) in self.iter() {
-            write!(f, "Package: {}", package.name)?;
-            write!(f, "Authors:")?;
+            writeln!(f, "Package: {}", package.name)?;
+            writeln!(f, "Authors:")?;
             for author in package.authors.iter() {
-                write!(f, " - {}", author)?;
+                writeln!(f, " - {}", author)?;
             }
-            write!(f, "\n{:=<1}\n", SEPERATOR_WIDTH)?;
+            writeln!(f, "\n{}\n", separator)?;
         
             for line in license.iter() {
-                write!(f, "{}", line)?;
+                writeln!(f, "{}", line)?;
             }
         
-            write!(f, "{:=<1}\n", SEPERATOR_WIDTH)?;
+            writeln!(f, "{}\n", separator)?;
         }
 
         Ok(())
