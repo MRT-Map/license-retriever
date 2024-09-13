@@ -1,6 +1,7 @@
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
+    fmt,
 };
 
 use cargo_metadata::{Metadata, MetadataCommand, Package};
@@ -246,6 +247,31 @@ impl IntoIterator for LicenseRetriever {
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
+    }
+}
+
+impl fmt::Display for LicenseRetriever {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        const SEPERATOR_WIDTH: u32 = 80;
+
+        write!(f, "{:=<1}\n", SEPERATOR_WIDTH)?;
+
+        for (package, license) in self.iter() {
+            write!(f, "Package: {}", package.name)?;
+            write!(f, "Authors:")?;
+            for author in package.authors.iter() {
+                write!(f, " - {}", author)?;
+            }
+            write!(f, "\n{:=<1}\n", SEPERATOR_WIDTH)?;
+        
+            for line in license.iter() {
+                write!(f, "{}", line)?;
+            }
+        
+            write!(f, "{:=<1}\n", SEPERATOR_WIDTH)?;
+        }
+
+        Ok(())
     }
 }
 
