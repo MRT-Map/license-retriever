@@ -26,18 +26,35 @@ Licenses are retrieved by searching in the following order:
 * Text from `spdx` with identifier in `Cargo.toml`
 
 ## Usage
-```rust
-    // build.rs ==========
-    fn main() {
-        let config = license_retriever::Config {
-            // options...
-            ..Config::default()
-        };
-        license_retriever::LicenseRetriever::from_config(&config)?.save_in_out_dir("licenses")?;
-    }
+### *Cargo*
 
-    // main project ==========
-    fn main() {
-        let licenses = license_retriever::license_retriever_data!("licenses").unwrap(); // Vec<(Package, Vec<String>)>
-    }
+```
+cargo add license-retriever
+cargo add --build license-retriever
+```
+
+### `build.rs`
+
+```rust
+use license_retriever::{Config, LicenseRetriever};
+
+fn main() {
+    let config = Config {
+        // options...
+        ..Config::default()
+    };
+    LicenseRetriever::from_config(&config).unwrap().save_in_out_dir("LICENSE-3RD-PARTY").unwrap();
+}
+
+```
+
+### `main.rs`
+
+```rust
+use license_retriever;
+
+fn main() {
+    let licenses = license_retriever::license_retriever_data!("LICENSE-3RD-PARTY").unwrap();
+    println!("{}", licenses);
+}
 ```
