@@ -71,7 +71,7 @@ fn extract_licenses_from_repo_folder(path: &Path) -> Result<Vec<String>> {
         {
             continue;
         }
-        info!("Found {:?}", entry.path());
+        info!("Found {}", entry.path().display());
         if entry.file_type()?.is_dir() {
             for entry2 in entry.path().read_dir()? {
                 let entry2 = entry2?;
@@ -99,7 +99,7 @@ fn clone_repo(id: &str, repository: &str) -> Result<bool> {
         return Ok(true);
     }
 
-    info!("Cloning {repository} to {path:?}");
+    info!("Cloning {repository} to {:?}", path.display());
     if let Err(e) = RepoBuilder::new()
         .fetch_options({
             let mut fo = FetchOptions::new();
@@ -126,7 +126,7 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
             package.name
         );
         return Ok(vec![std::fs::read_to_string(&license_file)?]);
-    };
+    }
 
     let path = package
         .manifest_path
@@ -162,7 +162,6 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
 
     if let Some(license) = &package.license {
         let path = PathBuf::from(format!("{}/repo/@spdx", std::env::var("OUT_DIR")?));
-        println!("{path:?}");
         let mut licenses = vec![];
         for license in license
             .replace(" AND ", " ")
@@ -174,7 +173,7 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
         {
             let path2 = path.join("text").join(format!("{license}.txt"));
             if path2.exists() {
-                info!("Found {path2:?}");
+                info!("Found {}", path2.display());
                 licenses.push(std::fs::read_to_string(path2)?);
             }
         }
@@ -252,24 +251,24 @@ impl IntoIterator for LicenseRetriever {
 
 impl fmt::Display for LicenseRetriever {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        const SEPERATOR_WIDTH: usize = 80;
-        let separator: String = "=".repeat(SEPERATOR_WIDTH);
+        const SEPARATOR_WIDTH: usize = 80;
+        let separator = "=".repeat(SEPARATOR_WIDTH);
 
-        writeln!(f, "{}\n", separator)?;
+        writeln!(f, "{separator}\n")?;
 
         for (package, license) in self.iter() {
             writeln!(f, "Package: {}", package.name)?;
             writeln!(f, "Authors:")?;
-            for author in package.authors.iter() {
-                writeln!(f, " - {}", author)?;
+            for author in &package.authors {
+                writeln!(f, " - {author}")?;
             }
-            writeln!(f, "\n{}\n", separator)?;
+            writeln!(f, "\n{separator}\n")?;
         
-            for line in license.iter() {
-                writeln!(f, "{}", line)?;
+            for line in license {
+                writeln!(f, "{line}")?;
             }
         
-            writeln!(f, "{}\n", separator)?;
+            writeln!(f, "{separator}\n")?;
         }
 
         Ok(())
