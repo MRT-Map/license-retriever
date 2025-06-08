@@ -146,8 +146,8 @@ fn get_licenses(package: &Package) -> Result<Vec<String>> {
             let path = PathBuf::from(format!("{}/repo/{}", std::env::var("OUT_DIR")?, folder));
             let paths = [
                 path.clone(),
-                path.join(&package.name),
-                path.join("crates").join(&package.name),
+                path.join(&*package.name),
+                path.join("crates").join(&*package.name),
             ];
             for path in paths {
                 if path.exists() {
@@ -199,7 +199,7 @@ impl LicenseRetriever {
         let licenses = packages
             .into_par_iter()
             .map(|a| {
-                if let Some(licenses) = config.overrides.get(&a.name) {
+                if let Some(licenses) = config.overrides.get(&*a.name) {
                     return Ok((a.to_owned(), licenses.to_owned()));
                 }
                 Ok((a.to_owned(), get_licenses(a)?))
@@ -208,7 +208,7 @@ impl LicenseRetriever {
 
         let no_license = licenses
             .iter()
-            .filter(|(a, b)| b.is_empty() && !config.ignored_crates.contains(&a.name))
+            .filter(|(a, b)| b.is_empty() && !config.ignored_crates.contains(&*a.name))
             .map(|(a, _)| &a.name)
             .join(", ");
         if !no_license.is_empty() {

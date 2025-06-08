@@ -3,6 +3,7 @@ use test_log::test;
 
 #[test]
 fn test() {
+    unsafe { std::env::set_var("OUT_DIR", "target"); }
     let config = Config::default();
     let lr = LicenseRetriever::from_config(&config).unwrap();
     assert_eq!(

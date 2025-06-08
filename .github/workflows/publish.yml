@@ -11,8 +11,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - run: cargo test -- --nocapture
-      env:
-        OUT_DIR: target
 
   version:
     runs-on: ubuntu-latest
