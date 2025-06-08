@@ -1,6 +1,6 @@
 [package]
 name = "license-retriever"
-version = "1.1.0"
+version = "1.1.1"
 authors = ["7d <61975820+iiiii7d@users.noreply.github.com>"]
 description = "Retrieves licenses of all Rust dependencies"
 repository = "https://github.com/mrt-map/license-retriever"
