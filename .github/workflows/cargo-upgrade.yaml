@@ -6,3 +6,6 @@ on:
 jobs:
   cargo-upgrade:
     uses: iiiii7d/cargo-msrv-upgrade-workflow/.github/workflows/workflow.yml@main
+    permissions:
+      contents: write
+      pull-requests: write
