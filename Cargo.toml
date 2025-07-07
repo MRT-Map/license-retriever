@@ -17,6 +17,7 @@ edition = "2021"
 rust-version = "1.82"
 
 
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -30,7 +31,7 @@ rayon = "1.10"
 itertools = "0.14.0"
 
 [dev-dependencies]
-test-log = "0.2.17"
+test-log = "0.2.18"
 
 [lints.rust]
 future-incompatible = "deny"
