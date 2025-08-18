@@ -25,7 +25,7 @@ cargo_metadata = "0.21.0"
 thiserror = "2.0"
 log = "0.4.27"
 git2 = "0.20.2"
-rayon = "1.10"
+rayon = "1.11"
 itertools = "0.14.0"
 
 [dev-dependencies]
