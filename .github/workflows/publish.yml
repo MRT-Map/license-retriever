@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - run: cargo test -- --nocapture
 
   version:
@@ -19,7 +19,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - run: cargo update
     - id: version
       run: echo "version=v$(cargo pkgid | cut -d '#' -f 2)" >> "$GITHUB_OUTPUT"
@@ -31,7 +31,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: cargo package
       - uses: softprops/action-gh-release@v2
         with:
@@ -43,7 +43,7 @@ jobs:
     needs: test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: cargo login "$CRATES_IO_API"
         env:
           CRATES_IO_API: ${{ secrets.CRATES_IO_API }}
