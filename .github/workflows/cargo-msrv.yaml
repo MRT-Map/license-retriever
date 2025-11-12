@@ -1,0 +1,11 @@
+on:
+  workflow_dispatch:
+  push:
+    paths: ["**/Cargo.toml", "**/Cargo.lock"]
+    
+jobs:
+  cargo-msrv:
+    uses: iiiii7d/cargo-msrv-workflow/.github/workflows/workflow.yml@main
+    permissions:
+      contents: write
+      pull-requests: write
