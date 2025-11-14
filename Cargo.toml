@@ -1,6 +1,6 @@
 [package]
 name = "license-retriever"
-version = "1.1.1"
+version = "1.1.2"
 authors = ["7d <61975820+iiiii7d@users.noreply.github.com>"]
 description = "Retrieves licenses of all Rust dependencies"
 repository = "https://github.com/mrt-map/license-retriever"
@@ -85,7 +85,7 @@ semicolon_inside_block = "warn"
 str_to_string = "warn"
 string_lit_chars_any = "warn"
 string_slice = "warn"
-string_to_string = "warn"
+# string_to_string = "warn"
 try_err = "warn"
 unnecessary_self_imports = "warn"
 unneeded_field_pattern = "warn"

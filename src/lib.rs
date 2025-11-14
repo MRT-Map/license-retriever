@@ -1,7 +1,7 @@
 use std::{
     collections::HashSet,
-    path::{Path, PathBuf},
     fmt,
+    path::{Path, PathBuf},
 };
 
 use cargo_metadata::{Metadata, MetadataCommand, Package};
@@ -263,11 +263,11 @@ impl fmt::Display for LicenseRetriever {
                 writeln!(f, " - {author}")?;
             }
             writeln!(f, "\n{separator}\n")?;
-        
+
             for line in license {
                 writeln!(f, "{line}")?;
             }
-        
+
             writeln!(f, "{separator}\n")?;
         }
 
