@@ -1,0 +1,69 @@
+amends "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Builtins.pkl"
+
+local formatters = new Mapping<String, Step> {
+    ["cargo_fmt"] = Builtins.cargo_fmt
+}
+
+local linters = new Mapping<String, Step> {
+    ["cargo_clippy"] = (Builtins.cargo_clippy) {
+        check = (Builtins.cargo_clippy.check as String) + " --all-targets --all-features"
+        fix = (Builtins.cargo_clippy.fix as String) + " --all-targets --all-features"
+    }
+    ["zizmor"] = Builtins.zizmor
+    ["actionlint"] = Builtins.actionlint
+    ["poutine"] {
+        glob = Builtins.zizmor.glob
+        check = "poutine analyze_local . --skip github_action_from_unverified_creator_used"
+    }
+}
+local sarif = new Mapping<String, Step> {
+    ["mkdir"] {
+        fix = "mkdir .sarif || true"
+        exclusive = true
+    }
+    ["cargo_clippy"] {
+        workspace_indicator = "Cargo.toml"
+        fix = linters["cargo_clippy"].fix as String + " --message-format=json | clippy-sarif > .sarif/clippy.sarif"
+    }
+    ["zizmor"] {
+        fix = linters["zizmor"].fix.replaceAll("{{ files }}", ".") + " --format=sarif > .sarif/zizmor.sarif"
+    }
+    ["actionlint"] {
+        check = linters["actionlint"].check.replaceAll("{{ files }}", "") + " -format \"$(curl -sSL \"https://raw.githubusercontent.com/rhysd/actionlint/refs/heads/main/testdata/format/sarif_template.txt\")\" > .sarif/actionlint.sarif"
+    }
+    ["poutine"] {
+        check = linters["poutine"].check as String + " --format=sarif > .sarif/poutine.sarif"
+    }
+}
+hooks {
+    ["pre-commit"] {
+        fix = true
+        stash = "git"
+        steps = new Mapping<String, Step | Group> {
+            ...formatters
+            ...linters
+        }
+    }
+    ["fix"] {
+        fix = true
+        steps = new Mapping<String, Step | Group> {
+            ...formatters
+            ...linters
+        }
+    }
+    ["check"] {
+        steps = new Mapping<String, Step | Group> {
+            ...formatters
+            ...linters
+        }
+    }
+    ["format"] {
+        fix = true
+        steps = formatters
+    }
+    ["sarif"] {
+        fix = true
+        steps = sarif
+    }
+}

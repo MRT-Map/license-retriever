@@ -1,62 +1,96 @@
+name: Publish
 on:
-  push:
-    branches: ["renovate/**"]
   workflow_dispatch:
+  push:
+    tags: ["**"]
 
 jobs:
   test:
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-    runs-on: ${{ matrix.os }}
+    uses: ./.github/workflows/test.yml
     permissions: 
       contents: read
 
-    steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-    - run: cargo test -- --nocapture
-
-  version:
+  version-changelog:
     runs-on: ubuntu-latest
-    needs: test
     outputs:
       version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
     permissions:
       contents: read
 
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-    - run: cargo update
-    - id: version
-      run: echo "version=v$(cargo pkgid | cut -d '#' -f 2)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - id: version
+        run: echo "version=$(cargo pkgid | cut -d '#' -f 2)" >> "$GITHUB_OUTPUT"
+      - id: changelog
+        run: |
+          {
+          echo 'changelog<<__EOF__'
+          python -c "
+          import os
+          print('\n'.join(open('CHANGELOG.md').read().split('## v' + os.environ['VERSION'])[1].split('\n')[1:]).split('\n##')[0])
+          "
+          echo __EOF__
+          } >> "$GITHUB_OUTPUT"
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
 
   github-release:
     runs-on: ubuntu-latest
-    needs: [test, version]
+    needs: [test, version-changelog]
     if: github.event_name != 'pull_request' && !startsWith(github.ref_name, 'renovate/')
     permissions:
       contents: write
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - run: cargo package
-      - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
-          tag_name: ${{ needs.version.outputs.version }}
+          persist-credentials: false
+      - uses: ./.github/actions/mise
+        with:
+          cache: false
+          envs: ''
+      - run: cargo package --locked
+      - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0  # zizmor: ignore[superfluous-actions]
+        with:
+          tag_name: ${{ needs.version-changelog.outputs.version }}
+          name: ${{ needs.version-changelog.outputs.version }}
+          body: ${{ needs.version-changelog.outputs.changelog }}
           files: target/package/*.crate
+          generate_release_notes: true
 
   crates-io:
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name != 'pull_request' && !startsWith(github.ref_name, 'renovate/')
     environment: crates
     permissions:
       id-token: write
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe # v1.0.4
         id: auth
-      - run: cargo publish
+      - run: cargo publish --locked
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+
+  delete-github-release:
+    runs-on: ubuntu-slim
+    needs: [ test, version-changelog, github-release, crates-io ]
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - run: gh release delete "v$TAG" --cleanup-tag -y
+        env:
+          TAG: ${{ needs.version-changelog.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        continue-on-error: true

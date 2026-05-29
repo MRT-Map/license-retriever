@@ -1,0 +1,10 @@
+[tools]
+hk = "1.45.0"
+pkl = "0.31.1"
+"cargo:clippy-sarif" = { version = "=0.8.0", depends = "cargo-binstall" }
+zizmor = "1.25.2"
+actionlint = "1.7.12"
+"github:boostsecurityio/poutine" = "1.1.6"
+
+[tasks]
+pre-commit = { run = "hk run pre-commit" }
