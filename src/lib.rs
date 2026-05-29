@@ -93,7 +93,7 @@ fn clone_repo(id: &str, repository: &str) -> Result<bool> {
         .split("/tree/")
         .next()
         .unwrap();
-    let path = PathBuf::from(format!("{}/repo/{id}", std::env::var("OUT_DIR")?,));
+    let path = PathBuf::from(format!("{}/repo/{id}", std::env::var("OUT_DIR")?));
 
     if path.exists() {
         return Ok(true);
