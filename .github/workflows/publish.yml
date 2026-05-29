@@ -55,9 +55,9 @@ jobs:
       - run: cargo package --locked
       - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0  # zizmor: ignore[superfluous-actions]
         with:
-          tag_name: ${{ needs.version-changelog.outputs.version }}
-          name: ${{ needs.version-changelog.outputs.version }}
-          body: ${{ needs.version-changelog.outputs.changelog }}
+          tag_name: v${{ needs.version-changelog.outputs.version }}
+          name: v${{ needs.version-changelog.outputs.version }}
+          body: v${{ needs.version-changelog.outputs.changelog }}
           files: target/package/*.crate
           generate_release_notes: true
 
