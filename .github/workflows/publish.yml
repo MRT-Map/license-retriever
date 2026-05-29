@@ -57,7 +57,7 @@ jobs:
         with:
           tag_name: v${{ needs.version-changelog.outputs.version }}
           name: v${{ needs.version-changelog.outputs.version }}
-          body: v${{ needs.version-changelog.outputs.changelog }}
+          body: ${{ needs.version-changelog.outputs.changelog }}
           files: target/package/*.crate
           generate_release_notes: true
 

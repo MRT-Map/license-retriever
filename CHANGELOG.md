@@ -1,9 +1,12 @@
 # Changelog
 
-## v1.1.3-rc.0 (20260530)
+## v1.1.3 (20260530)
 * upgrade & loosen dependencies
 * migrate to mise & hk
 * various ci changes
+
+### v1.1.3-rc.0 (20260530)
+_test release_
 
 ## v1.1.2 (20251114)
 upgrade dependencies
