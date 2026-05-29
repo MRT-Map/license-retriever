@@ -5,7 +5,7 @@ use std::{
 };
 
 use cargo_metadata::{Metadata, MetadataCommand, Package};
-use git2::{build::RepoBuilder, FetchOptions};
+use git2::{FetchOptions, build::RepoBuilder};
 use itertools::Itertools;
 use log::{debug, info, warn};
 use rayon::prelude::*;
