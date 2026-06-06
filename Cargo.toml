@@ -29,7 +29,7 @@ rayon = ">=0.8.0, <2.0.0"
 itertools = ">=0.2.1, <0.15.0"
 
 [dev-dependencies]
-test-log = "=0.2.20"
+test-log = "=0.2.21"
 
 [lints.rust]
 future-incompatible = "deny"
