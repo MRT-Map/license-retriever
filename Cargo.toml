@@ -26,7 +26,7 @@ thiserror = ">=1.0.2, <3.0.0"
 log = "0.4.17"
 git2 = { version = ">=0.18.1, <0.22.0", features = ["https", "ssh"] }
 rayon = ">=0.8.0, <2.0.0"
-itertools = ">=0.2.1, <0.15.0"
+itertools = ">=0.2.1, <0.16.0"
 
 [dev-dependencies]
 test-log = "=0.2.21"
