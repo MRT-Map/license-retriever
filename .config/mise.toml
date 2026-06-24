@@ -1,6 +1,6 @@
 [tools]
 rust = { version = "nightly-2026-06-19", components = "rustfmt,clippy" }
-cargo-binstall = "1.20.0"
+cargo-binstall = "1.20.1"
 
 [settings]
 minimum_release_age = "3d"
