@@ -1,5 +1,5 @@
 [tools]
-rust = { version = "nightly-2026-06-26", components = "rustfmt,clippy" }
+rust = { version = "nightly-2026-07-03", components = "rustfmt,clippy" }
 cargo-binstall = "1.20.1"
 
 [settings]
