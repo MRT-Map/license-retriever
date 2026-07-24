@@ -1,5 +1,5 @@
 [tools]
-hk = "1.51.0"
+hk = "1.52.0"
 pkl = "0.32.0"
 "cargo:clippy-sarif" = { version = "0.8.0", depends = "cargo-binstall" }
 zizmor = "1.27.0"
