@@ -1,6 +1,6 @@
 [tools]
 hk = "1.51.0"
-pkl = "0.32.0"
+pkl = "0.32.1"
 "cargo:clippy-sarif" = { version = "0.8.0", depends = "cargo-binstall" }
 zizmor = "1.27.0"
 actionlint = "1.7.12"
