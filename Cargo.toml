@@ -32,7 +32,7 @@ itertools = ">=0.2.1, <0.16.0"
 test-log = "=0.2.21"
 
 [lints.rust]
-future-incompatible = "deny"
+future_incompatible = "deny"
 
 [lints.clippy]
 all = "warn"
