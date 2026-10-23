@@ -7,7 +7,7 @@ on:
     
 jobs:
   cargo-msrv:
-    uses: iiiii7d/cargo-msrv-workflow/.github/workflows/workflow.yml@362fc284418c073e07feb2b2a0bb396ca3a795a5 # main
+    uses: iiiii7d/cargo-msrv-workflow/.github/workflows/workflow.yml@c18ad60c147274a8b1beb35d413b0525f765cfb9 # main
     permissions:
       contents: write
       pull-requests: write
