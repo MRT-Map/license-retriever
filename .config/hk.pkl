@@ -1,40 +1,24 @@
 amends "package://github.com/jdx/hk/releases/download/v2.8.0/hk@2.8.0#/Config.pkl"
 import "package://github.com/jdx/hk/releases/download/v2.8.0/hk@2.8.0#/Builtins.pkl"
+import "package://github.com/iiiii7d/hk/releases/download/v2.8.0-7/hk@2.8.0-7#/Cargo.pkl"
+import "package://github.com/iiiii7d/hk/releases/download/v2.8.0-7/hk@2.8.0-7#/Misc.pkl"
 
 local formatters = new Mapping<String, Step> {
-    ["cargo_fmt"] = Builtins.cargo_fmt
+    ["cargo_fmt"] = Cargo.cargo_fmt
 }
 
 local linters = new Mapping<String, Step> {
-    ["cargo_clippy"] = (Builtins.cargo_clippy) {
-        check = (Builtins.cargo_clippy.check as String) + " --all-targets --all-features"
-        fix = (Builtins.cargo_clippy.fix as String) + " --all-targets --all-features"
-    }
-    ["zizmor"] = Builtins.zizmor
-    ["actionlint"] = Builtins.actionlint
-    ["poutine"] {
-        glob = Builtins.zizmor.glob
-        check = "poutine analyze_local . --skip github_action_from_unverified_creator_used"
-    }
+    ["cargo_clippy"] = Cargo.cargo_clippy
+    ["zizmor"] = Misc.zizmor
+    ["actionlint"] = Misc.actionlint
+    ["poutine"] = Misc.poutine
 }
 local sarif = new Mapping<String, Step> {
-    ["mkdir"] {
-        fix = "mkdir .sarif || true"
-        exclusive = true
-    }
-    ["cargo_clippy"] {
-        workspace_indicator = "Cargo.toml"
-        fix = linters["cargo_clippy"].fix as String + " --message-format=json | clippy-sarif > .sarif/clippy.sarif"
-    }
-    ["zizmor"] {
-        fix = linters["zizmor"].fix.replaceAll("{{ files }}", ".") + " --format=sarif > .sarif/zizmor.sarif"
-    }
-    ["actionlint"] {
-        check = "actionlint -format \"$(curl -sSL \"https://cdn.jsdelivr.net/gh/kjanat/actionlint/sarif_template.txt\")\" > .sarif/actionlint.sarif"
-    }
-    ["poutine"] {
-        check = linters["poutine"].check as String + " --format=sarif > .sarif/poutine.sarif"
-    }
+    ["mkdir"] = Misc.mkdir_sarif(".sarif")
+    ["cargo_clippy"] = Cargo.cargo_clippy_sarif(".sarif")
+    ["zizmor"] = Misc.zizmor_sarif(".sarif")
+    ["actionlint"] = Misc.actionlint_sarif(".sarif")
+    ["poutine"] = Misc.poutine_sarif(".sarif")
 }
 hooks {
     ["pre-commit"] {
