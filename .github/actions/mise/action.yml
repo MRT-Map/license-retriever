@@ -28,7 +28,7 @@ runs:
     - id: mise-action
       uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
       with:
-        version: v2026.10.17
+        version: v2026.10.23
         cache: ${{ inputs.cache }}
 
     - id: cache-rust
