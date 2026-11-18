@@ -87,7 +87,6 @@ jobs:
       - uses: $/.github/actions/mise
         with:
           envs: "msrv"
-          use-actions-config: false
 
       - run: sed -i '/^rust-version/d' Cargo.toml
           
