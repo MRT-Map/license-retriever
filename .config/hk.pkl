@@ -1,53 +1,27 @@
 amends "package://github.com/jdx/hk/releases/download/v2.12.0/hk@2.12.0#/Config.pkl"
 import "package://github.com/jdx/hk/releases/download/v2.12.0/hk@2.12.0#/Builtins.pkl"
-import "package://github.com/iiiii7d/hk/releases/download/v2.8.0-7/hk@2.8.0-7#/Cargo.pkl"
-import "package://github.com/iiiii7d/hk/releases/download/v2.8.0-7/hk@2.8.0-7#/Misc.pkl"
+import "package://github.com/iiiii7d/hk/releases/download/v2.12.0-11/hk@2.12.0-11#/Cargo.pkl"
+import "package://github.com/iiiii7d/hk/releases/download/v2.12.0-11/hk@2.12.0-11#/Misc.pkl"
 
 local formatters = new Mapping<String, Step> {
-    ["cargo_fmt"] = Cargo.cargo_fmt
+    ["cargo_fmt"] = Cargo.fmt
 }
 
 local linters = new Mapping<String, Step> {
-    ["cargo_clippy"] = Cargo.cargo_clippy
-    ["zizmor"] = Misc.zizmor
+    ["cargo_clippy"] = Cargo.clippy
+    ...Misc.zizmor.steps
     ["actionlint"] = Misc.actionlint
-    ["poutine"] = Misc.poutine
+    ...Misc.poutine.steps
 }
-local sarif = new Mapping<String, Step> {
-    ["mkdir"] = Misc.mkdir_sarif(".sarif")
-    ["cargo_clippy"] = Cargo.cargo_clippy_sarif(".sarif")
-    ["zizmor"] = Misc.zizmor_sarif(".sarif")
-    ["actionlint"] = Misc.actionlint_sarif(".sarif")
-    ["poutine"] = Misc.poutine_sarif(".sarif")
+
+steps {
+    ...formatters
+    ...linters
 }
+
 hooks {
     ["pre-commit"] {
         fix = true
         stash = "git"
-        steps = new Mapping<String, Step | Group> {
-            ...formatters
-            ...linters
-        }
-    }
-    ["fix"] {
-        fix = true
-        steps = new Mapping<String, Step | Group> {
-            ...formatters
-            ...linters
-        }
-    }
-    ["check"] {
-        steps = new Mapping<String, Step | Group> {
-            ...formatters
-            ...linters
-        }
-    }
-    ["format"] {
-        fix = true
-        steps = formatters
-    }
-    ["sarif"] {
-        fix = true
-        steps = sarif
     }
 }
