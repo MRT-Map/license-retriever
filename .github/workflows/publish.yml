@@ -4,13 +4,20 @@ on:
   push:
     tags: ["**"]
 
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: Test
     uses: $/.github/workflows/test.yml
     permissions: 
       contents: read
 
-  version-changelog:
+  changelog-version:
+    name: Extract changelog & version
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -38,8 +45,9 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
 
   github-release:
+    name: GitHub release
     runs-on: ubuntu-latest
-    needs: [test, version-changelog]
+    needs: [test, changelog-version]
     if: github.event_name != 'pull_request' && !startsWith(github.ref_name, 'renovate/')
     permissions:
       contents: write
@@ -55,13 +63,14 @@ jobs:
       - run: cargo package --locked
       - uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4  # zizmor: ignore[superfluous-actions]
         with:
-          tag_name: v${{ needs.version-changelog.outputs.version }}
-          name: v${{ needs.version-changelog.outputs.version }}
-          body: ${{ needs.version-changelog.outputs.changelog }}
+          tag_name: v${{ needs.changelog-version.outputs.version }}
+          name: v${{ needs.changelog-version.outputs.version }}
+          body: ${{ needs.changelog-version.outputs.changelog }}
           files: target/package/*.crate
           generate_release_notes: true
 
   crates-io:
+    name: Publish to crates.io
     runs-on: ubuntu-latest
     needs: test
     environment: crates
@@ -79,8 +88,9 @@ jobs:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
 
   delete-github-release:
+    name: Delete failed release
     runs-on: ubuntu-slim
-    needs: [ test, version-changelog, github-release, crates-io ]
+    needs: [ test, changelog-version, github-release, crates-io ]
     if: ${{ always() && contains(needs.*.result, 'failure') }}
     permissions:
       contents: write
@@ -91,6 +101,6 @@ jobs:
           persist-credentials: false
       - run: gh release delete "v$TAG" --cleanup-tag -y
         env:
-          TAG: ${{ needs.version-changelog.outputs.version }}
+          TAG: ${{ needs.changelog-version.outputs.version }}
           GH_TOKEN: ${{ github.token }}
         continue-on-error: true
