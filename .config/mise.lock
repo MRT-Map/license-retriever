@@ -50,9 +50,9 @@ url_api = "https://api.github.com/repos/cargo-bins/cargo-binstall/releases/asset
 provenance = "github-attestations"
 
 [[tools.rust]]
-version = "nightly-2026-11-13"
+version = "nightly-2026-11-20"
 backend = "core:rust"
-specifiers = ["nightly-2026-11-13"]
+specifiers = ["nightly-2026-11-20"]
 
 [tools.rust.options]
 components = "clippy,rustfmt"
