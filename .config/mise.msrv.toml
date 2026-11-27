@@ -1,2 +1,2 @@
 [tools]
-"cargo:cargo-msrv" = { version = "0.20.0-beta.5", depends = "cargo-binstall" }
+"cargo:cargo-msrv" = { version = "0.20.0-beta.7", depends = "cargo-binstall" }
