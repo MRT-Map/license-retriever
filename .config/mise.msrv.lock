@@ -3,6 +3,6 @@
 lockfile_version = 4
 
 [[tools."cargo:cargo-msrv"]]
-version = "0.20.0-beta.5"
+version = "0.20.0-beta.7"
 backend = "cargo:cargo-msrv"
-specifiers = ["0.20.0-beta.5"]
+specifiers = ["0.20.0-beta.7"]
